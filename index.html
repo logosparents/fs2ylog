@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎒 真道FS1V功課大集合</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti Library for playful fireworks -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        /* 引入極高清晰度的標準字體：Inter + Noto Sans TC */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #ffffff; /* 底色變回純白色 */
+        }
+
+        /* 隱藏原生 Date Picker 樣式 */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
+
+        /* 圖片縮放與拖曳手勢 */
+        .zoom-img {
+            transition: transform 0.12s ease-out;
+            cursor: grab;
+        }
+        .zoom-img:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12 text-slate-800 bg-white">
+
+    <div class="max-w-xl mx-auto px-4 pt-6 space-y-6">
+        
+        <!-- Header 頂部真道紫設計 (靜態無跳動) -->
+        <div class="flex items-center justify-between bg-slate-50 px-5 py-4 rounded-[2rem] border-2 border-purple-200 shadow-sm">
+            <div class="flex items-center gap-3">
+                <!-- 取消了書包背後的紫色漸變底色，改用乾淨的淺灰色 -->
+                <div class="w-11 h-11 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">
+                    🎒
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 leading-tight">真道FS1V功課大集合</h1>
+                    <p class="text-[11px] text-purple-600 font-bold tracking-wider uppercase">FS1V Homework Playground ✨</p>
+                </div>
+            </div>
+            <div class="flex gap-1.5">
+                <button onclick="toggleConfigModal()" class="text-purple-600 hover:text-purple-800 transition-colors p-2.5 rounded-full hover:bg-purple-100/50" title="魔法路徑設定">
+                    <i data-lucide="settings" class="w-5.5 h-5.5"></i>
+                </button>
+                <a href="https://www.logos.edu.hk/tc/homework-log/fs1v" target="_blank" 
+                   class="text-purple-600 hover:text-purple-800 transition-colors p-2.5 rounded-full hover:bg-purple-100/50" title="飛往真道官網 🚀">
+                    <i data-lucide="rocket" class="w-5.5 h-5.5"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- 星期一至五 快捷鍵 Shortcuts -->
+        <div class="bg-slate-50 rounded-[2rem] p-5 border-2 border-purple-100 shadow-sm space-y-3 relative overflow-hidden">
+            <span class="text-xs font-bold text-purple-700 tracking-wider flex items-center gap-1.5">
+                <i data-lucide="star" class="w-4 h-4 text-purple-600 fill-purple-200"></i> 本週尋寶快捷鍵
+            </span>
+            <div class="grid grid-cols-5 gap-2" id="weekdays-shortcuts">
+                <!-- 由 JavaScript 自動動態生成 -->
+            </div>
+            
+            <!-- 手動日期選擇器 (放大字體至 text-base) -->
+            <div class="relative flex items-center mt-3 bg-white border-2 border-purple-200 rounded-2xl px-4 py-2.5">
+                <i data-lucide="calendar" class="w-5 h-5 text-purple-700 mr-2.5 pointer-events-none"></i>
+                <input type="date" id="date-picker" onchange="setDate(this.value)" 
+                       class="w-full bg-transparent text-base font-bold text-slate-900 outline-none cursor-pointer">
+                <span class="text-xs font-semibold text-purple-700 absolute right-4 pointer-events-none">自訂日期 <i data-lucide="chevron-right" class="inline w-3.5 h-3.5"></i></span>
+            </div>
+        </div>
+
+        <!-- 功課圖片卡片 -->
+        <div class="bg-white rounded-[2rem] border-2 border-purple-100 shadow-md overflow-hidden flex flex-col">
+            
+            <!-- 圖片頂部資訊 (日期字體放大至 text-lg) -->
+            <div class="px-5 py-3 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <span class="text-lg font-bold text-purple-800 flex items-center gap-1.5" id="current-viewing-date">
+                    <i data-lucide="clock" class="w-5 h-5"></i> 尋找寶物中...
+                </span>
+                <div class="flex gap-2">
+                    <button onclick="resetZoom()" class="p-2.5 hover:bg-purple-100/50 rounded-xl text-purple-600 hover:text-purple-800 transition-colors" title="還原大小">
+                        <i data-lucide="maximize" class="w-4.5 h-4.5"></i>
+                    </button>
+                    <button onclick="zoom(1.2)" class="p-2.5 hover:bg-purple-100/50 rounded-xl text-purple-600 hover:text-purple-800 transition-colors" title="放大看細節">
+                        <i data-lucide="zoom-in" class="w-4.5 h-4.5"></i>
+                    </button>
+                    <button onclick="copyImgUrl()" class="p-2.5 hover:bg-purple-100/50 rounded-xl text-purple-600 hover:text-purple-800 transition-colors" title="複製功課寶藏連結">
+                        <i data-lucide="copy" class="w-4.5 h-4.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 圖片檢視區域 (包含平移、多路徑自動重試) -->
+            <div class="relative bg-slate-100 min-h-[340px] max-h-[500px] flex items-center justify-center overflow-hidden" id="img-container">
+                <!-- 載入中動畫 -->
+                <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/95 z-10 transition-opacity duration-300">
+                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-purple-200 border-t-purple-700"></div>
+                    <span class="text-sm font-bold text-purple-700" id="loading-text">召喚真道官網功課中...</span>
+                </div>
+
+                <!-- 功課圖片本體 -->
+                <img id="homework-img" src="" alt="功課圖片" 
+                     class="zoom-img max-w-full max-h-full object-contain hidden rounded-xl"
+                     onerror="attemptNextUrl()" onload="handleImageSuccess()">
+
+                <!-- 沒有功課 / 404 顯示提示 -->
+                <div id="no-task-msg" class="hidden p-8 text-center space-y-4 z-20">
+                    <div class="w-16 h-16 bg-yellow-100 text-yellow-800 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+                        🥳
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-lg">哇！今天沒有發現功課相片喔！</h4>
+                        <p class="text-sm text-slate-500 mt-1">官網尚未上傳，或今天不需交功課！</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 圖片下方互動控制台 -->
+            <div class="p-5 border-t-2 border-slate-100 space-y-4 bg-slate-50/20">
+                <div class="grid grid-cols-2 gap-3">
+                    
+                    <!-- Checkbox 1: 小朋友檢查 (字體放大、清晰) -->
+                    <label class="flex items-center gap-3.5 p-4 bg-white border-2 border-slate-200 hover:border-purple-300 rounded-[1.5rem] cursor-pointer hover:bg-purple-50/20 transition-all shadow-sm select-none">
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="chk-done" onchange="handleChildCheck()"
+                                   class="peer appearance-none w-7 h-7 border-2 border-purple-300 rounded-xl checked:border-purple-700 checked:bg-purple-700 transition-all cursor-pointer">
+                            <i data-lucide="check" class="absolute inset-0 m-auto w-4.5 h-4.5 text-white scale-0 peer-checked:scale-100 transition-transform pointer-events-none"></i>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <!-- 字體放大至 text-base -->
+                            <span class="text-base font-bold text-slate-950 leading-tight flex items-center gap-1">小朋友檢查 <span class="text-xs">✨</span></span>
+                            <!-- 字體放大至 text-xs -->
+                            <span class="text-xs text-slate-500 font-medium mt-1 leading-none">做完喇！去放煙花 🎆</span>
+                        </div>
+                    </label>
+
+                    <!-- Checkbox 2: 家長覆核 (字體放大、清晰) -->
+                    <label class="flex items-center gap-3.5 p-4 bg-white border-2 border-slate-200 hover:border-purple-300 rounded-[1.5rem] cursor-pointer hover:bg-purple-50/20 transition-all shadow-sm select-none">
+                        <div class="relative flex items-center shrink-0">
+                            <input type="checkbox" id="chk-verified" onchange="handleParentCheck()"
+                                   class="peer appearance-none w-7 h-7 border-2 border-purple-300 rounded-xl checked:border-purple-700 checked:bg-purple-700 transition-all cursor-pointer">
+                            <i data-lucide="eye" class="absolute inset-0 m-auto w-4.5 h-4.5 text-white scale-0 peer-checked:scale-100 transition-transform pointer-events-none"></i>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <!-- 字體放大至 text-base -->
+                            <span class="text-base font-bold text-slate-950 leading-tight flex items-center gap-1">家長覆核 <span class="text-xs">🏆</span></span>
+                            <!-- 字體放大至 text-xs -->
+                            <span class="text-xs text-slate-500 font-medium mt-1 leading-none">爸爸媽媽簽名囉 💖</span>
+                        </div>
+                    </label>
+
+                </div>
+
+                <!-- 🌟 WhatsApp 一鍵分享按鈕 -->
+                <button onclick="shareToWhatsApp()" 
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base py-4 px-4 rounded-[1.5rem] transition-all shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="message-circle" class="w-5.5 h-5.5 fill-white"></i>
+                    <span>將功課傳送給 補習老師/姐姐 💬</span>
+                </button>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- 工程師路徑自訂 Modal -->
+    <div id="config-modal" class="hidden fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-6 border-2 border-purple-200 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b-2 border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <i data-lucide="settings-2" class="text-purple-700 w-5 h-5"></i> 魔法時光資料夾設定
+                </h3>
+                <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                    有時新功課相片會調皮地躲進舊資料夾。你可以幫大集合設定優先尋寶的年份資料夾（預設為自動搜尋）。
+                </p>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">🔍 首選尋寶資料夾年份</label>
+                    <input type="text" id="cfg-year" placeholder="例如: 2023" 
+                           class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-950 focus:outline-none focus:ring-2 focus:ring-purple-500/20">
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="toggleConfigModal()" class="flex-1 bg-slate-50 hover:bg-slate-100 text-purple-700 text-xs font-bold py-3 rounded-xl transition-all">關閉</button>
+                <button onclick="saveConfig()" class="flex-1 bg-purple-700 text-white text-xs font-bold py-3 rounded-xl transition-all shadow-md">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUrl = "";
+        let currentSelectedDateStr = "";
+        
+        // 智能重試 URL 隊列機制
+        let urlAttemptQueue = [];
+        let currentAttemptIndex = 0;
+
+        // 圖片平移與縮放變數
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY, translateX = 0, translateY = 0;
+        const img = document.getElementById('homework-img');
+        const imgContainer = document.getElementById('img-container');
+
+        // 初始化
+        window.onload = function() {
+            lucide.createIcons();
+            
+            // 載入用戶自訂年份資料夾
+            const savedYear = localStorage.getItem('logos_cfg_year') || '2023';
+            document.getElementById('cfg-year').value = savedYear;
+
+            const today = new Date();
+            // 自動跳轉週末至工作天
+            if (today.getDay() === 0) { // 星期日 -> 跳到前日星期五
+                today.setDate(today.getDate() - 2);
+            } else if (today.getDay() === 6) { // 星期六 -> 跳到前日星期五
+                today.setDate(today.getDate() - 1);
+            }
+
+            const formattedDate = formatDateISO(today);
+            document.getElementById('date-picker').value = formattedDate;
+
+            generateWeekdayShortcuts();
+            setDate(formattedDate);
+            initPanAndZoom();
+        }
+
+        // 格式化 Date 為 YYYY-MM-DD
+        function formatDateISO(date) {
+            const tzOffset = date.getTimezoneOffset() * 60000; 
+            return (new Date(date.getTime() - tzOffset)).toISOString().split('T')[0];
+        }
+
+        // 產生本週星期一至五快捷鍵
+        function generateWeekdayShortcuts() {
+            const container = document.getElementById('weekdays-shortcuts');
+            const today = new Date();
+            const currentDay = today.getDay();
+            
+            const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + mondayOffset);
+
+            const weekdaysName = ["一", "二", "三", "四", "五"];
+
+            for (let i = 0; i < 5; i++) {
+                const day = new Date(monday);
+                day.setDate(monday.getDate() + i);
+                const dayStr = formatDateISO(day);
+                
+                const isToday = formatDateISO(new Date()) === dayStr;
+                const dateNumStr = day.getDate();
+
+                const btn = document.createElement('button');
+                btn.id = `btn-day-${dayStr}`;
+                btn.onclick = () => setDate(dayStr);
+                
+                btn.className = `flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl border-2 transition-all ${
+                    isToday 
+                    ? 'bg-purple-700 text-white border-purple-700 shadow-md scale-105 font-bold' 
+                    : 'bg-white text-slate-800 border-slate-200 hover:border-purple-300 hover:bg-purple-50'
+                }`;
+
+                // 放大快捷鍵中的日期數字至 text-base
+                btn.innerHTML = `
+                    <span class="text-xs opacity-85 font-semibold mb-0.5">周${weekdaysName[i]}</span>
+                    <span class="text-base font-extrabold tracking-tight">${day.getMonth() + 1}/${dateNumStr}</span>
+                `;
+                container.appendChild(btn);
+            }
+        }
+
+        // 設定並載入日期功課相片
+        function setDate(dateStr) {
+            currentSelectedDateStr = dateStr;
+            document.getElementById('date-picker').value = dateStr;
+            document.getElementById('current-viewing-date').innerHTML = `<i data-lucide="clock" class="inline w-5 h-5 mr-1 text-purple-700"></i>日期: ${dateStr}`;
+            
+            // 更新快捷鍵高亮
+            document.querySelectorAll('#weekdays-shortcuts button').forEach(btn => {
+                const btnDate = btn.id.replace('btn-day-', '');
+                const isToday = formatDateISO(new Date()) === btnDate;
+                if (btnDate === dateStr) {
+                    btn.className = "flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl border-2 transition-all bg-purple-700 text-white border-purple-700 shadow-md scale-105 font-bold";
+                } else {
+                    btn.className = isToday 
+                    ? "flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl border-2 transition-all bg-purple-50 text-purple-800 border-purple-300/60 font-bold"
+                    : "flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl border-2 transition-all bg-white text-slate-800 border-slate-200 hover:border-purple-300 hover:bg-purple-50";
+                }
+            });
+
+            // 初始化重試佇列
+            const chosenYear = localStorage.getItem('logos_cfg_year') || '2023';
+            const selectedDateYear = dateStr.split('-')[0];
+
+            urlAttemptQueue = [
+                `https://www.logos.edu.hk/sites/default/files/web/type/homework/image/${chosenYear}/${dateStr}-FS1V.jpg`,
+                `https://www.logos.edu.hk/sites/default/files/web/type/homework/image/${selectedDateYear}/${dateStr}-FS1V.jpg`,
+                `https://www.logos.edu.hk/sites/default/files/web/type/homework/image/2025/${dateStr}-FS1V.jpg`
+            ];
+            
+            urlAttemptQueue = [...new Set(urlAttemptQueue)];
+            currentAttemptIndex = 0;
+
+            loadImgFromQueue();
+            loadCheckboxes(dateStr);
+            lucide.createIcons();
+        }
+
+        // 從隊列中嘗試載入圖片
+        function loadImgFromQueue() {
+            if (currentAttemptIndex >= urlAttemptQueue.length) {
+                handleImageError();
+                return;
+            }
+
+            document.getElementById('loading-spinner').classList.remove('opacity-0', 'hidden');
+            document.getElementById('no-task-msg').classList.add('hidden');
+            img.classList.add('hidden');
+            
+            currentUrl = urlAttemptQueue[currentAttemptIndex];
+            const currentDirName = currentUrl.split('/image/')[1]?.split('/')[0] || '';
+            document.getElementById('loading-text').textContent = `正在嘗試載入 [${currentDirName}] 號相片...`;
+
+            resetZoom();
+            img.src = currentUrl;
+        }
+
+        // 自動嘗試下一個備用網址
+        window.attemptNextUrl = function() {
+            currentAttemptIndex++;
+            loadImgFromQueue();
+        }
+
+        // 圖片載入成功
+        function handleImageSuccess() {
+            document.getElementById('loading-spinner').classList.add('opacity-0', 'hidden');
+            img.classList.remove('hidden');
+            document.getElementById('no-task-msg').classList.add('hidden');
+        }
+
+        // 所有路徑皆載入失敗
+        function handleImageError() {
+            document.getElementById('loading-spinner').classList.add('opacity-0', 'hidden');
+            img.classList.add('hidden');
+            document.getElementById('no-task-msg').classList.remove('hidden');
+        }
+
+        // 🌟 小朋友勾選處理：發射彩虹繽紛煙花！
+        window.handleChildCheck = function() {
+            const isChecked = document.getElementById('chk-done').checked;
+            saveCheckboxes();
+            
+            if (isChecked) {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.8 },
+                    colors: ['#7e22ce', '#db2777', '#2563eb', '#ca8a04', '#16a34a', '#dc2626']
+                });
+            }
+        }
+
+        // 🌟 家長勾選處理：發射左右雙砲夾擊的超狂慶祝星星大煙花！
+        window.handleParentCheck = function() {
+            const isChecked = document.getElementById('chk-verified').checked;
+            saveCheckboxes();
+            
+            if (isChecked) {
+                confetti({
+                    particleCount: 80,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.8 },
+                    colors: ['#ca8a04', '#db2777', '#7e22ce', '#0284c7']
+                });
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 80,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1, y: 0.8 },
+                        colors: ['#ca8a04', '#db2777', '#7e22ce', '#0284c7']
+                    });
+                }, 150);
+            }
+        }
+
+        // 一鍵複製功課圖片網址
+        function copyImgUrl() {
+            if (!currentUrl) return;
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = currentUrl;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-1.5 font-bold border-2 border-purple-400";
+            toast.innerHTML = `🪄 功課網址已複製到剪貼簿囉！`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        // WhatsApp 格式化分享
+        window.shareToWhatsApp = function() {
+            if (!currentUrl) return;
+            
+            const daysOfWeek = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+            const dateObj = new Date(currentSelectedDateStr);
+            const dayName = isNaN(dateObj.getTime()) ? "" : ` (${daysOfWeek[dateObj.getDay()]})`;
+
+            const messageText = 
+`🎒 *真道書院 FS1V 功課相片*
+📅 *日期*：${currentSelectedDateStr}${dayName}
+🔗 *功課相片網址*：${currentUrl}
+
+*(可以直接點擊上方連結查看最新功課手冊相片！)*`;
+
+            const encodedText = encodeURIComponent(messageText);
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // --- 本地持久化 (LocalStorage) 狀態儲存 ---
+        function saveCheckboxes() {
+            const isDone = document.getElementById('chk-done').checked;
+            const isVerified = document.getElementById('chk-verified').checked;
+            
+            const state = { done: isDone, verified: isVerified };
+            localStorage.setItem(`logos_state_${currentSelectedDateStr}`, JSON.stringify(state));
+        }
+
+        function loadCheckboxes(dateStr) {
+            const saved = localStorage.getItem(`logos_state_${dateStr}`);
+            if (saved) {
+                const state = JSON.parse(saved);
+                document.getElementById('chk-done').checked = state.done || false;
+                document.getElementById('chk-verified').checked = state.verified || false;
+            } else {
+                document.getElementById('chk-done').checked = false;
+                document.getElementById('chk-verified').checked = false;
+            }
+        }
+
+        // --- 設定 Modal 控制 ---
+        function toggleConfigModal() {
+            document.getElementById('config-modal').classList.toggle('hidden');
+        }
+
+        function saveConfig() {
+            const val = document.getElementById('cfg-year').value.trim();
+            if (val) {
+                localStorage.setItem('logos_cfg_year', val);
+                toggleConfigModal();
+                setDate(currentSelectedDateStr);
+            }
+        }
+
+        // --- 圖片平移與縮放引擎 ---
+        function initPanAndZoom() {
+            imgContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                zoom(zoomFactor);
+            });
+
+            const startDrag = (e) => {
+                isDragging = true;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX - translateX;
+                startY = clientY - translateY;
+            };
+
+            const dragging = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                translateX = clientX - startX;
+                translateY = clientY - startY;
+                applyTransform();
+            };
+
+            const endDrag = () => { isDragging = false; };
+
+            imgContainer.addEventListener('mousedown', startDrag);
+            imgContainer.addEventListener('mousemove', dragging);
+            window.addEventListener('mouseup', endDrag);
+
+            imgContainer.addEventListener('touchstart', startDrag, {passive: false});
+            imgContainer.addEventListener('touchmove', dragging, {passive: false});
+            window.addEventListener('touchend', endDrag);
+        }
+
+        function zoom(factor) {
+            scale *= factor;
+            scale = Math.min(Math.max(0.5, scale), 4.0);
+            applyTransform();
+        }
+
+        function resetZoom() {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+            applyTransform();
+        }
+
+        function applyTransform() {
+            img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+    </script>
+</body>
+</html>
